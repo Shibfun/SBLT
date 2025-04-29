@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SBLT to BONE Price Query</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #ff9100;
+            --secondary-color: #ff6f61;
+            --gradient-bg: linear-gradient(180deg, #1e1e2f 0%, #2a2a3d 100%);
+            --card-bg: #2c2f48;
+            --input-bg: #373b5c;
+            --text-color: #ffffff;
+            --border-radius: 15px;
+        }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: var(--gradient-bg);
+            color: var(--text-color);
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background: var(--card-bg);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            border-radius: var(--border-radius);
+            padding: 20px;
+        }
+        .header {
+            background: linear-gradient(90deg, var(--secondary-color) 0%, var(--primary-color) 100%);
+            padding: 12px;
+            border-radius: var(--border-radius);
+            text-align: center;
+            font-size: 1.3em;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+        .action-button {
+            padding: 15px;
+            background: var(--primary-color);
+            color: var(--text-color);
+            border: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-weight: bold;
+            width: 100%;
+            transition: background 0.2s;
+            margin-bottom: 10px;
+            position: relative;
+        }
+        .action-button:disabled {
+            background: #4a4f7a;
+            cursor: not-allowed;
+        }
+        .action-button:hover:not(:disabled) {
+            background: #e68a00;
+        }
+        .result-box {
+            background: var(--input-bg);
+            padding: 15px;
+            border-radius: var(--border-radius);
+            margin-top: 15px;
+        }
+        .result-box p {
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+        .total-price {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+        .error {
+            color: #ff6f61;
+            font-size: 0.9em;
+            margin-top: 10px;
+            text-align: center;
+        }
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #fff;
+            border-top: 2px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 5px;
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        @media (max-width: 480px) {
+            body { padding: 10px; }
+            .container { padding: 15px; }
+            .header { font-size: 1.1em; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">SBLT to BONE Price Query</div>
+        <p>Check value of 10M SBLT in BONE</p>
+        <button class="action-button" id="queryPriceButton">Query Price</button>
+        <div class="result-box" id="resultBox" style="display: none;">
+            <p class="total-price" id="totalPrice">Total: 0.000000 BONE</p>
+            <p id="bonePrice">BONE (1): 1.000000 BONE</p>
+            <p id="shibPrice">SHIB (20,000): 0.000000 BONE</p>
+            <p id="leashPrice">LEASH (0.0005): 0.000000 BONE</p>
+            <p id="treatPrice">TREAT (50): 0.000000 BONE</p>
+        </div>
+        <div class="error" id="errorMessage"></div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.7.0/dist/web3.min.js"></script>
+    <script>
+        const routerAddress = '0x96b16aBD53Bfd765F4CD118590C1d0be8B57DE24';
+        const wboneAddress = '0x839FdB6cc98342B428E074C1573ADF6D48CA3bFd';
+        const tokenAddresses = [
+            '0x495eea66B0f8b636D441dC6a98d8F5C3D455C4c0', // SHIB
+            '0x65218A41Fb92637254B4f8c97448d3dF343A3064', // LEASH
+            '0x506d8d2d9c715Eb34F514cc3EF48C7aBD19e2bc7'  // TREAT
+        ];
+        const tokenNames = ['SHIB', 'LEASH', 'TREAT'];
+        const requiredAmounts = ['20000', '0.0005', '50'];
+        const boneRequired = '1';
+        const shibariumRpc = 'https://www.shibrpc.com';
+
+        const routerAbi = [
+            {
+                "constant": true,
+                "inputs": [
+                    {"name": "amountIn", "type": "uint256"},
+                    {"name": "tokenIn", "type": "address"},
+                    {"name": "tokenOut", "type": "address"}
+                ],
+                "name": "getAmountOut",
+                "outputs": [
+                    {"name": "amount", "type": "uint256"},
+                    {"name": "stable", "type": "bool"}
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            }
+        ];
+
+        const web3 = new Web3(shibariumRpc);
+        const routerContract = new web3.eth.Contract(routerAbi, routerAddress);
+
+        async function withTimeout(promise, timeoutMs) {
+            const timeout = new Promise((_, reject) => {
+                setTimeout(() => reject(new Error('Request timed out')), timeoutMs);
+            });
+            return Promise.race([promise, timeout]);
+        }
+
+        async function queryPrice() {
+            const queryButton = document.getElementById('queryPriceButton');
+            const resultBox = document.getElementById('resultBox');
+            const errorMessage = document.getElementById('errorMessage');
+            const totalPriceElement = document.getElementById('totalPrice');
+            const priceElements = tokenNames.map(name => document.getElementById(`${name.toLowerCase()}Price`));
+            const bonePriceElement = document.getElementById('bonePrice');
+
+            errorMessage.innerText = '';
+            resultBox.style.display = 'none';
+            queryButton.disabled = true;
+            queryButton.innerHTML = 'Querying... <span class="spinner"></span>';
+
+            try {
+                let totalBoneValue = parseFloat(boneRequired); // BONE is 1:1
+                bonePriceElement.innerText = `BONE (${boneRequired}): ${boneRequired}.000000 BONE`;
+
+                const queries = tokenAddresses.map(async (tokenAddress, i) => {
+                    const tokenName = tokenNames[i];
+                    const amount = requiredAmounts[i];
+                    const amountInWei = web3.utils.toWei(amount, 'ether');
+
+                    try {
+                        const result = await withTimeout(
+                            routerContract.methods.getAmountOut(amountInWei, tokenAddress, wboneAddress).call(),
+                            5000
+                        );
+                        const boneValue = Number(web3.utils.fromWei(result[0], 'ether')).toFixed(6);
+                        priceElements[i].innerText = `${tokenName} (${amount}): ${boneValue} BONE (${result[1] ? 'Stable' : 'Volatile'})`;
+                        return parseFloat(boneValue);
+                    } catch {
+                        priceElements[i].innerText = `${tokenName} (${amount}): No trading pair`;
+                        return 0;
+                    }
+                });
+
+                const boneValues = await Promise.all(queries);
+                totalBoneValue += boneValues.reduce((sum, value) => sum + value, 0);
+
+                totalPriceElement.innerText = `Total: ${totalBoneValue.toFixed(6)} BONE`;
+                resultBox.style.display = 'block';
+
+                if (totalBoneValue === parseFloat(boneRequired)) {
+                    errorMessage.innerText = 'No trading pairs found for SHIB, LEASH, or TREAT. Only BONE value included.';
+                } else if (priceElements.some(el => el.innerText.includes('No trading pair'))) {
+                    errorMessage.innerText = 'Some tokens lack trading pairs, total value may be incomplete.';
+                }
+            } catch {
+                errorMessage.innerText = 'Error querying price. Check network and try again.';
+            } finally {
+                queryButton.disabled = false;
+                queryButton.innerHTML = 'Query Price';
+            }
+        }
+
+        document.getElementById('queryPriceButton').addEventListener('click', queryPrice);
+    </script>
+</body>
+</html>
