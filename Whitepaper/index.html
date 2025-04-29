@@ -169,8 +169,6 @@
                 <li><strong>ERC20 Compliance:</strong> Supports standard functions (`transfer`, `approve`, `transferFrom`) for seamless integration with wallets and dApps.</li>
                 <li><strong>Deposit Function:</strong> Accepts BONE (payable) and ERC20 tokens, mints SBLT, and enforces balance and allowance checks.</li>
                 <li><strong>Withdraw Function:</strong> Burns SBLT and returns BONE and ERC20 tokens, with strict balance validation.</li>
-                <li><strong>Non-Reentrant:</strong> Uses a reentrancy guard to prevent attacks during external calls.</li>
-                <li><strong>Error Handling:</strong> Provides detailed error messages for insufficient balances or allowances.</li>
             </ul>
             <div class="contract-details">
                 <p><strong>Contract Address:</strong> 0xe735Ebc0fF37bD7249Dde7f44747A5a3c980Ab16</p>
@@ -209,15 +207,9 @@
             <h2>7. Security</h2>
             <p>The SBLT contract has been designed with security as a priority:</p>
             <ul>
-                <li><strong>Reentrancy Protection:</strong> Uses a non-reentrant modifier to prevent reentrancy attacks.</li>
-                <li><strong>Safe Transfers:</strong> Employs `call` with success checks for BONE and ERC20 transfers, compatible with non-standard tokens.</li>
-                <li><strong>Balance Checks:</strong> Validates user and contract balances before transactions to prevent overdrafts.</li>
                 <li><strong>Immutable Parameters:</strong> Fixed token ratios and maximum supply eliminate governance risks.</li>
                 <li><strong>Verification:</strong> Source code is publicly verifiable on Shibarium Scan for transparency.</li>
             </ul>
-            <p>
-                While the contract has undergone rigorous testing, users are encouraged to verify interactions and monitor Shibarium Scan for transaction details. A formal audit is recommended for production use.
-            </p>
         </div>
 
         <div class="section">
@@ -244,7 +236,7 @@
         </div>
 
         <div class="dog-section">
-            <img src="https://raw.githubusercontent.com/Shibfun/ChainBridge/refs/heads/main/images/shiba.gif" alt="Shiba Dog">
+            <img src="https://www.woofswap.finance/image/tokens/shiba.gif" alt="Shiba Dog">
             <div class="dog-message">"Woof! Let's roll with SBLT, pup!"</div>
         </div>
 
